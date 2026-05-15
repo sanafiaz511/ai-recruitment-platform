@@ -16,15 +16,30 @@ class JobController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
+        // Only recruiters
+        if ($user->role !== 'recruiter') {
+            return response()->json([
+                'message' => 'Only recruiters can post jobs'
+            ], 403);
+        }
+
+        // Recruiter must have company
+        if (!$user->company) {
+            return response()->json([
+                'message' => 'Create company profile first'
+            ], 403);
+        }
+
         $validated = $request->validate([
-            'company_id' => 'required|exists:companies,id',
             'title' => 'required',
             'description' => 'required',
             'type' => 'required',
         ]);
 
         $job = JobListing::create([
-            'company_id' => $validated['company_id'],
+            'company_id' => $user->company->id,
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']),
             'description' => $validated['description'],
