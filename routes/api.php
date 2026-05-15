@@ -4,6 +4,7 @@ use App\Http\Controllers\API\ApplicationController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\JobController;
 use App\Http\Controllers\API\CompanyController;
+use App\Http\Controllers\API\ResumeController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -28,5 +29,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-applications', [ApplicationController::class, 'myApplications']);
     Route::get('/jobs/{id}/applications', [ApplicationController::class, 'jobApplicants']);
     Route::patch('/applications/{id}/status', [ApplicationController::class, 'updateStatus']);
+
+    Route::post('/resume/upload', [ResumeController::class, 'upload']);
+    Route::get('/resume', [ResumeController::class, 'myResume']);
 });
 
