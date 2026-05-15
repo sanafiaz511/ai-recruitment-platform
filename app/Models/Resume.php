@@ -12,7 +12,12 @@ class Resume extends Model
         'original_name',
         'parsed_data',
         'skills',
-        'experience_years'
+        'experience_years',
+        'strengths',
+        'weaknesses',
+        'summary',
+        'score',
+        'raw_ai_response'
     ];
 
     protected $casts = [

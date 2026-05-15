@@ -6,17 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Resume;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Smalot\PdfParser\Parser;
+use PhpOffice\PhpWord\IOFactory;
+use App\Services\AI\ResumeService;
 
 class ResumeController extends Controller
 {
-    public function upload(Request $request)
+    public function upload(Request $request, ResumeService $aiService)
     {
         $user = $request->user();
 
-        // Only candidates
         if ($user->role !== 'candidate') {
             return response()->json([
-                'message' => 'Only candidates can upload resumes'
+                'message' => 'Only candidates allowed'
             ], 403);
         }
 
@@ -25,31 +27,54 @@ class ResumeController extends Controller
         ]);
 
         $file = $request->file('resume');
-
-        if ($file->getSize() > 5 * 1024 * 1024) {
-            return response()->json([
-                'message' => 'File too large'
-            ], 422);
-        }
-
         $path = $file->store('resumes', 'public');
 
-        // If resume already exists → replace
-        $existing = Resume::where('user_id', $user->id)->first();
+        // Extract text
+        $text = '';
 
-        if ($existing) {
-            Storage::disk('public')->delete($existing->file_path);
-            $existing->delete();
+        if ($file->getClientOriginalExtension() === 'pdf') {
+            $parser = new Parser();
+            $pdf = $parser->parseFile($file->getPathname());
+            $text = $pdf->getText();
         }
+
+        if (in_array($file->getClientOriginalExtension(), ['doc', 'docx'])) {
+            $phpWord = IOFactory::load($file->getPathname());
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $text .= $element->getText() . ' ';
+                    }
+                }
+            }
+        }
+
+        // AI analysis
+        $aiResult = $aiService->analyze($text);
+
+        $parsed = $aiResult;
 
         $resume = Resume::create([
             'user_id' => $user->id,
             'file_path' => $path,
-            'original_name' => $file->getClientOriginalName()
+            'original_name' => $file->getClientOriginalName(),
+
+            'parsed_data' => json_encode($parsed),
+
+            'skills' => json_encode($parsed['skills'] ?? []),
+            'experience_years' => $parsed['experience_years'] ?? null,
+
+            'strengths' => json_encode($parsed['strengths'] ?? []),
+            'weaknesses' => json_encode($parsed['weaknesses'] ?? []),
+
+            'summary' => $parsed['summary'] ?? null,
+            'score' => $parsed['score'] ?? null,
+
+            'raw_ai_response' => json_encode($aiResult),
         ]);
 
         return response()->json([
-            'message' => 'Resume uploaded successfully',
+            'message' => 'Resume uploaded & analyzed successfully',
             'resume' => $resume
         ]);
     }
