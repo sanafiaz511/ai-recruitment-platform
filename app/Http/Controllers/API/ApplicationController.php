@@ -5,11 +5,12 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\JobListing;
+use App\Services\AI\MatchingService;
 use Illuminate\Http\Request;
 
 class ApplicationController extends Controller
 {
-    public function apply(Request $request)
+    public function apply(Request $request, MatchingService $matchingService)
     {
         $validated = $request->validate([
             'job_id' => 'required|exists:job_listings,id',
@@ -43,8 +44,16 @@ class ApplicationController extends Controller
             'status' => 'pending'
         ]);
 
+        $job = JobListing::find($validated['job_id']);
+        $score = $matchingService->calculate($job, $application);
+
+        $application->update([
+            'ai_score' => $score
+        ]);
+
         return response()->json([
             'message' => 'Application submitted successfully',
+            'ai_score' => $score,
             'application' => $application
         ]);
     }
@@ -79,7 +88,7 @@ class ApplicationController extends Controller
 
         $applications = Application::with('user')
             ->where('job_listing_id', $job->id)
-            ->latest()
+            ->orderByDesc('ai_score')
             ->get();
 
         return response()->json($applications);
