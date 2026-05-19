@@ -13,27 +13,27 @@ class ResumeService
         $apiKey = env('GEMINI_API_KEY');
 
         $prompt = "
-You are a strict JSON generator.
+        You are a strict JSON generator.
 
-RULES:
-- Return ONLY valid JSON
-- No markdown
-- No explanation
-- No text before or after JSON
+        RULES:
+        - Return ONLY valid JSON
+        - No markdown
+        - No explanation
+        - No text before or after JSON
 
-FORMAT:
-{
-  \"score\": 0,
-  \"skills\": [],
-  \"experience_years\": 0,
-  \"strengths\": [],
-  \"weaknesses\": [],
-  \"summary\": \"\"
-}
+        FORMAT:
+        {
+        \"score\": 0,
+        \"skills\": [],
+        \"experience_years\": 0,
+        \"strengths\": [],
+        \"weaknesses\": [],
+        \"summary\": \"\"
+        }
 
-Resume:
-{$text}
-";
+        Resume:
+        {$text}
+        ";
 
         $response = $client->post(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={$apiKey}",
