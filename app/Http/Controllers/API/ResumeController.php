@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessResumeJob;
 use App\Models\Resume;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Smalot\PdfParser\Parser;
 use PhpOffice\PhpWord\IOFactory;
 use App\Services\AI\ResumeService;
@@ -49,32 +49,20 @@ class ResumeController extends Controller
             }
         }
 
-        // AI analysis
-        $aiResult = $aiService->analyze($text);
-
-        $parsed = $aiResult;
-
+        // Create resume first
         $resume = Resume::create([
             'user_id' => $user->id,
             'file_path' => $path,
             'original_name' => $file->getClientOriginalName(),
-
-            'parsed_data' => json_encode($parsed),
-
-            'skills' => json_encode($parsed['skills'] ?? []),
-            'experience_years' => $parsed['experience_years'] ?? null,
-
-            'strengths' => json_encode($parsed['strengths'] ?? []),
-            'weaknesses' => json_encode($parsed['weaknesses'] ?? []),
-
-            'summary' => $parsed['summary'] ?? null,
-            'score' => $parsed['score'] ?? null,
-
-            'raw_ai_response' => json_encode($aiResult),
+            'extracted_text' => $text,
+            'processing_status' => 'processing'
         ]);
 
+        // Dispatch background job
+        ProcessResumeJob::dispatch($resume);
+
         return response()->json([
-            'message' => 'Resume uploaded & analyzed successfully',
+            'message' => 'Resume uploaded successfully. AI analysis started.',
             'resume' => $resume
         ]);
     }

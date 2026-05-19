@@ -19,7 +19,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/jobs', [JobController::class, 'index']);
+    Route::get('/jobs/{slug}', [JobController::class, 'show']);
     Route::post('/jobs', [JobController::class, 'store']);
+    Route::get('/recommended-jobs', [JobController::class, 'recommended']);
 
     Route::post('/companies', [CompanyController::class, 'store']);
     Route::get('/my-company', [CompanyController::class, 'myCompany']);

@@ -17,11 +17,15 @@ class Resume extends Model
         'weaknesses',
         'summary',
         'score',
-        'raw_ai_response'
+        'raw_ai_response',
+        'processing_status'
     ];
 
     protected $casts = [
-        'parsed_data' => 'array'
+        'parsed_data' => 'array',
+        'skills' => 'array',
+        'strengths' => 'array',
+        'weaknesses' => 'array',
     ];
 
     public function user()
